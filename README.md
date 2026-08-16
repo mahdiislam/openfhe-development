@@ -1,3 +1,17 @@
+OPENFHE-GPU-PUBLIC
+=====================================
+
+This library is not affiliated with OpenFHE or Duality Technologies. 
+
+Any bugs or security issues are our own. 
+
+This library is *not* intended for production use. Instead, it is meant to benchmark GPU-accelerated FHE applications. 
+
+Below, we have included the original README from OpenFHE, which contains instructions to build the library. For most setups with a CUDA installation, running `mkdir build; cd build; cmake ..; make;` will build the code. 
+
+The GPU-accelerated bootstrapping can be run with the command `./bin/examples/pke/advanced-ckks-bootstrapping-gpu`. 
+
+
 OpenFHE - Open-Source Fully Homomorphic Encryption Library
 =====================================
 

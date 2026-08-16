@@ -8,7 +8,15 @@
 ## An option has the value of ON or OFF
 ## See below for the list of options
 
-cmake_minimum_required (VERSION 3.5.1)
+# cmake_minimum_required (VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.18)
+
+# set(CMAKE_CUDA_COMPILER "/usr/local/cuda-12.3/bin/nvcc")
+# set(CMAKE_CUDA_COMPILER "/usr/local/cuda-12.3/bin/nvcc")
+set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party)
+# add_subdirectory(src/core/thirdparty)
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -27,7 +35,7 @@ project (OpenFHE C CXX)
 
 set(OPENFHE_VERSION_MAJOR 1)
 set(OPENFHE_VERSION_MINOR 2)
-set(OPENFHE_VERSION_PATCH 1)
+set(OPENFHE_VERSION_PATCH 0)
 set(OPENFHE_VERSION ${OPENFHE_VERSION_MAJOR}.${OPENFHE_VERSION_MINOR}.${OPENFHE_VERSION_PATCH})
 
 set(CMAKE_CXX_STANDARD 17)
@@ -56,7 +64,7 @@ if ( EMSCRIPTEN )
     option( BUILD_STATIC "Set to ON to build static versions of the library"         ON  )
     option( BUILD_UNITTESTS "Set to ON to build unit tests for the library"          OFF )
     option( BUILD_EXAMPLES "Set to ON to build examples for the library"             OFF )
-    option( BUILD_BENCHMARKS "Set to ON to build benchmarks for the library"         OFF )
+    # option( BUILD_BENCHMARKS "Set to ON to build benchmarks for the library"         OFF )
     set(WITH_OPENMP OFF)
     message( "OpenMP is not supported by Emscripten" )
 else()
@@ -64,7 +72,7 @@ else()
     option( BUILD_STATIC "Set to ON to build static versions of the library"         OFF )
     option( BUILD_UNITTESTS "Set to ON to build unit tests for the library"          ON  )
     option( BUILD_EXAMPLES "Set to ON to build examples for the library"             ON  )
-    option( BUILD_BENCHMARKS "Set to ON to build benchmarks for the library"         ON  )
+    # option( BUILD_BENCHMARKS "Set to ON to build benchmarks for the library"         ON  )
     option( WITH_OPENMP "Use OpenMP to enable <omp.h>"                               ON  )
 endif()
 
@@ -91,7 +99,7 @@ endif()
 ### Print options
 message( STATUS "BUILD_UNITTESTS:  ${BUILD_UNITTESTS}")
 message( STATUS "BUILD_EXAMPLES:   ${BUILD_EXAMPLES}")
-message( STATUS "BUILD_BENCHMARKS: ${BUILD_BENCHMARKS}")
+# message( STATUS "BUILD_BENCHMARKS: ${BUILD_BENCHMARKS}")
 message( STATUS "BUILD_EXTRAS:     ${BUILD_EXTRAS}")
 message( STATUS "BUILD_STATIC:     ${BUILD_STATIC}")
 message( STATUS "BUILD_SHARED:     ${BUILD_SHARED}")
@@ -152,6 +160,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # we can use GNU built-in functions provided by GCC for debugging. ex: __builtin_LINE (), __builtin_FUNCTION (), __builtin_FILE ()
     add_definitions(-DBUILTIN_INFO_AVAILABLE)
     message (STATUS "BUILTIN_INFO_AVAILABLE is defined")
+endif()
+
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    set(IGNORE_WARNINGS "${IGNORE_WARNINGS} -Wno-unused-private-field -Wno-shift-op-parentheses")
 endif()
 
 if( WITH_NATIVEOPT )
@@ -529,6 +541,9 @@ include (ExternalProject)
 
 # third party directories
 set( THIRDPARTYDIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party )
+
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party)
+
 include_directories( ${THIRDPARTYDIR}/include )
 
 ### Handle third-party CEREAL
@@ -657,6 +672,38 @@ if( BUILD_UNITTESTS )
     set(UNITTESTMAIN ${PROJECT_SOURCE_DIR}/test/Main_TestAll.cpp)
 endif()
 
+# set(CMAKE_CUDA_ARCHITECTURES "native")
+# set(CMAKE_CUDA_COMPILER "/usr/local/cuda-12.3/bin/nvcc")
+
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 70 72 75 80 86)
+endif()
+
+project(DeviceFunctions LANGUAGES CUDA CXX)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+# message("CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH})
+
+find_package(CUDAToolkit REQUIRED)
+find_package(Thrust REQUIRED)
+
+file (GLOB_RECURSE CORE_CUDA_FILES CONFIGURE_DEPENDS src/core/lib/gpu/*.cu)
+add_library(DeviceFunctions SHARED ${CORE_CUDA_FILES})
+
+target_link_directories(DeviceFunctions PUBLIC /usr/local/cuda/lib64)
+target_link_directories(DeviceFunctions PUBLIC /usr/local/cuda-12.3/lib64)
+target_link_libraries(DeviceFunctions
+  PUBLIC Thrust CUDA::cudart rmm
+  PRIVATE CUDA::nvToolsExt)
+target_compile_features(DeviceFunctions PUBLIC cxx_std_17 cuda_std_17)
+target_compile_options(DeviceFunctions PRIVATE
+  $<$<COMPILE_LANGUAGE:CXX>:-Wall>
+  $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fopenmp,-Wall>
+  $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:DEBUG>>:-G>
+  $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:RELWITHDEBINFO>>:-lineinfo>
+)
+
 ### add each of the subdirs of src
 add_subdirectory(src/core)
 add_subdirectory(src/pke)
@@ -668,13 +715,13 @@ add_subdirectory(src/binfhe)
 ###endif()
 
 ### build the google benchmark handlers (just the parts we need)
-if ( BUILD_BENCHMARKS )
+# if ( BUILD_BENCHMARKS )
     set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Enable testing of the benchmark library." FORCE)
     set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "Enable installation of benchmark. (Projects embedding benchmark may want to turn this OFF.)" FORCE)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "Enable building the unit tests which depend on gtest" FORCE)
     add_subdirectory(third-party/google-benchmark EXCLUDE_FROM_ALL)
     add_subdirectory(benchmark)
-endif()
+# endif()
 
 ## clobber cleans AND deletes the third-party stuff
 add_custom_target( clobber COMMAND make clean WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
