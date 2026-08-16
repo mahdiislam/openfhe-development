@@ -14,11 +14,11 @@ ENV CXX $CXX_param
 #install pre-requisites for OpenFHE
 RUN apt update && apt install -y git \
                                  build-essential \
-                                 gcc-10 \
-                                 g++-10 \
+                                 gcc \
+                                 g++ \
                                  cmake \
                                  autoconf \
-                                 clang-10 \
+                                 clang \
                                  libomp5 \
                                  libomp-dev \
                                  doxygen \

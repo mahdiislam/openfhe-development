@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package reranker.v1;
+
+service RerankService {
+  rpc ScoreEncryptedQuery(ScoreEncryptedQueryRequest) returns (ScoreEncryptedQueryResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+}
+
+message CandidateVector {
+  string doc_id = 1;
+  repeated float embedding = 2;
+}
+
+message ScoreEncryptedQueryRequest {
+  string request_id = 1;
+  int32 top_k = 2;
+  bytes serialized_crypto_context = 3;
+  bytes serialized_eval_mult_key = 4;
+  bytes serialized_eval_sum_key = 5;
+  bytes encrypted_query_ckks = 6;
+  repeated CandidateVector candidates = 7;
+}
+
+message EncryptedScore {
+  string doc_id = 1;
+  bytes encrypted_score_ckks = 2;
+}
+
+message ScoreEncryptedQueryResponse {
+  string request_id = 1;
+  repeated EncryptedScore encrypted_scores = 2;
+  string note = 3;
+}

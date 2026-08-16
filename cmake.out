@@ -1,0 +1,72 @@
+
+[proc] Executing command: /opt/homebrew/bin/cmake --version
+[proc] Executing command: /opt/homebrew/bin/cmake -E capabilities
+[kit] Successfully loaded 1 kits from /Users/mahdi/.local/share/CMakeTools/cmake-tools-kits.json
+[variant] Loaded new set of variants
+[proc] Executing command: /usr/bin/clang -v
+[proc] The command: ninja --version failed with error: Error: spawn ninja ENOENT
+[proc] The command: ninja-build --version failed with error: Error: spawn ninja-build ENOENT
+[main] Configuring project: openfhe-development 
+[proc] Executing command: /opt/homebrew/bin/cmake -DCMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/clang -DCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/clang++ --no-warn-unused-cli -S /Users/mahdi/Downloads/GitHub/openfhe-development -B /Users/mahdi/Downloads/GitHub/openfhe-development/build -G "Unix Makefiles"
+[cmake] The --no-warn-unused-cli option is deprecated.  Use -Wno-unused-cli instead.
+[cmake] CMake Warning (deprecated) at CMakeLists.txt:11 (cmake_minimum_required):
+[cmake]   Compatibility with CMake < 3.10 will be removed from a future version of
+[cmake]   CMake.
+[cmake] 
+[cmake]   Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+[cmake]   to tell CMake that the project requires at least <min> but has been updated
+[cmake]   to work with policies introduced by <max> or earlier.
+[cmake] This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+[cmake] to suppress it.
+[cmake] 
+[cmake] -- Building in Debug mode
+[cmake] -- BUILD_UNITTESTS:  ON
+[cmake] -- BUILD_EXAMPLES:   ON
+[cmake] -- BUILD_BENCHMARKS: ON
+[cmake] -- BUILD_EXTRAS:     OFF
+[cmake] -- BUILD_STATIC:     OFF
+[cmake] -- BUILD_SHARED:     ON
+[cmake] -- GIT_SUBMOD_AUTO:  ON
+[cmake] -- WITH_BE2:         OFF
+[cmake] -- WITH_BE4:         OFF
+[cmake] -- WITH_NTL:         OFF
+[cmake] -- WITH_TCM:         OFF
+[cmake] -- WITH_OPENMP:      ON
+[cmake] -- NATIVE_SIZE:      64
+[cmake] -- CKKS_M_FACTOR:    1
+[cmake] -- WITH_NATIVEOPT:   OFF
+[cmake] -- WITH_COVTEST:     OFF
+[cmake] -- WITH_NOISE_DEBUG: OFF
+[cmake] -- USE_MACPORTS:     OFF
+[cmake] -- Architecture is arm64
+[cmake] ***** INSTALL IS AT /usr/local; to change, run cmake with -DCMAKE_INSTALL_PREFIX=/your/path
+[cmake] -- NATIVEINT is set to 64
+[cmake] -- MATHBACKEND is set to 4
+[cmake] -- MATHBACKEND set to 4. Setting WITH_BE4 to ON
+[cmake] -- Apple M1 detected
+[cmake] -- OPENMP_LIBRARIES: /opt/homebrew/opt/libomp/lib
+[cmake] -- OPENMP_INCLUDES: /opt/homebrew/opt/libomp/include
+[cmake] -- OpenMP_CXX_FLAGS: -Xpreprocessor -fopenmp -lomp -Wno-unused-command-line-argument
+[cmake] -- OpenMP_CXX_LIB_NAMES: libomp
+[cmake] -- Submodule update
+[cmake] CMake Warning (deprecated) at third-party/google-benchmark/CMakeLists.txt:1 (cmake_minimum_required):
+[cmake]   Compatibility with CMake < 3.10 will be removed from a future version of
+[cmake]   CMake.
+[cmake] 
+[cmake]   Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+[cmake]   to tell CMake that the project requires at least <min> but has been updated
+[cmake]   to work with policies introduced by <max> or earlier.
+[cmake] This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+[cmake] to suppress it.
+[cmake] 
+[cmake] -- git version: v1.5.5-14-ge451e50e normalized to 1.5.5.14
+[cmake] -- Version: 1.5.5.14
+[cmake] -- Performing Test HAVE_STD_REGEX -- failed to compile
+[cmake] -- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
+[cmake] -- Performing Test HAVE_POSIX_REGEX -- failed to compile
+[cmake] -- Configuring incomplete, errors occurred!
+[cmake] CMake Error at third-party/google-benchmark/CMakeLists.txt:283 (message):
+[cmake]   Failed to determine the source files for the regular expression backend
+[cmake] 
+[cmake] 
+[proc] The command: /opt/homebrew/bin/cmake -DCMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/clang -DCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/clang++ --no-warn-unused-cli -S /Users/mahdi/Downloads/GitHub/openfhe-development -B /Users/mahdi/Downloads/GitHub/openfhe-development/build -G "Unix Makefiles" exited with code: 1
