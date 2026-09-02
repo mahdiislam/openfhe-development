@@ -692,7 +692,7 @@ file (GLOB_RECURSE CORE_CUDA_FILES CONFIGURE_DEPENDS src/core/lib/gpu/*.cu)
 add_library(DeviceFunctions SHARED ${CORE_CUDA_FILES})
 
 target_link_directories(DeviceFunctions PUBLIC /usr/local/cuda/lib64)
-# target_link_directories(DeviceFunctions PUBLIC /usr/local/cuda-12.3/lib64)
+target_link_directories(DeviceFunctions PUBLIC /usr/local/cuda-12.8/lib64)
 target_link_libraries(DeviceFunctions
   PUBLIC Thrust CUDA::cudart rmm
   PRIVATE CUDA::nvToolsExt)
