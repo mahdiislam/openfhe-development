@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
 #
-# Build and install leodec/openfhe-gpu-public.
+# details_build.sh — build and install leodec/openfhe-gpu-public.
 #
-# Key requirement: CMake 3.22.x. Newer CMake (3.27+) fails at configure time
-# with "export called with target ... which requires target Thrust/rmm that is
-# not in any export set". The project declares cmake_minimum_required(3.18)
-# and predates the stricter export checks.
+# Two workarounds are baked in, both discovered the hard way:
 #
-# Usage: ./details_build.sh [-s SRC_DIR] [-p PREFIX] [-a CUDA_ARCH] [-j JOBS] [-c]
+#   1. CMake must be 3.22.x. Newer CMake (3.27+) fails at configure time with
+#      "export called with target ... which requires target Thrust/rmm that is
+#      not in any export set". The project declares cmake_minimum_required(3.18)
+#      and predates the stricter export checks.
+#
+#   2. Thrust/RMM include dirs do not propagate from the project's CMake to all
+#      targets, so they are supplied via CPATH below.
+#
+# Usage: ./details_build.sh [-s SRC_DIR] [-p PREFIX] [-a CUDA_ARCH] [-j JOBS] [-t TARGET] [-c]
 #   -s  source directory   (default: ./openfhe-gpu-public)
 #   -p  install prefix     (default: $HOME/openfhe-install)
 #   -a  CUDA architecture  (default: autodetected; 75=T4, 80=A100, 86=A10/3090, 89=L4/4090)
 #   -j  parallel jobs      (default: nproc)
+#   -t  build only this target (repeatable); default builds everything
 #   -c  clean: remove the build directory before configuring
 
 set -euo pipefail
@@ -21,13 +27,15 @@ PREFIX="${HOME}/openfhe-install"
 ARCH=""
 JOBS="$(nproc)"
 CLEAN=0
+TARGETS=()
 
-while getopts ":s:p:a:j:c" opt; do
+while getopts ":s:p:a:j:t:c" opt; do
     case "$opt" in
         s) SRC="$(readlink -f "$OPTARG")" ;;
         p) PREFIX="$(readlink -f "$OPTARG")" ;;
         a) ARCH="$OPTARG" ;;
         j) JOBS="$OPTARG" ;;
+        t) TARGETS+=("$OPTARG") ;;
         c) CLEAN=1 ;;
         \?) echo "unknown option -$OPTARG" >&2; exit 1 ;;
     esac
@@ -38,12 +46,19 @@ BUILD="$SRC/build"
 [ -f "$SRC/CMakeLists.txt" ] || { echo "ERROR: no CMakeLists.txt in $SRC"; exit 1; }
 
 # --- CUDA toolkit -----------------------------------------------------------
-CUDA_HOME="${CUDA_HOME:-/usr/local/cuda}"
-[ -x "$CUDA_HOME/bin/nvcc" ] || {
-    echo "ERROR: nvcc not found at $CUDA_HOME/bin/nvcc. Set CUDA_HOME."; exit 1;
+# Prefer $CUDA_HOME, then /usr/local/cuda, then the newest /usr/local/cuda-*.
+if [ -z "${CUDA_HOME:-}" ]; then
+    if [ -x /usr/local/cuda/bin/nvcc ]; then
+        CUDA_HOME=/usr/local/cuda
+    else
+        CUDA_HOME="$(ls -d /usr/local/cuda-* 2>/dev/null | sort -V | tail -1 || true)"
+    fi
+fi
+[ -n "$CUDA_HOME" ] && [ -x "$CUDA_HOME/bin/nvcc" ] || {
+    echo "ERROR: nvcc not found. Set CUDA_HOME to your CUDA toolkit."; exit 1;
 }
 export PATH="$CUDA_HOME/bin:$PATH"
-echo "cuda:   $($CUDA_HOME/bin/nvcc --version | tail -1)"
+echo "cuda:   $CUDA_HOME  ($($CUDA_HOME/bin/nvcc --version | tail -1))"
 
 # --- NVIDIA driver library --------------------------------------------------
 # ld needs an unversioned libcuda.so to resolve -lcuda. Containers commonly
@@ -72,6 +87,11 @@ if [ ! -e "$DRIVER_DIR/libcuda.so" ]; then
 fi
 export LIBRARY_PATH="$DRIVER_DIR:$CUDA_HOME/lib64:${LIBRARY_PATH:-}"
 
+# --- include paths ----------------------------------------------------------
+# Thrust ships with the toolkit; CUDA 13 moved it under include/cccl.
+export CPATH="$CUDA_HOME/include:${CPATH:-}"
+[ -d "$CUDA_HOME/include/cccl" ] && export CPATH="$CUDA_HOME/include/cccl:$CPATH"
+
 # --- CMake version ----------------------------------------------------------
 CMAKE_BIN="$(command -v cmake || true)"
 CMAKE_VER="$($CMAKE_BIN --version 2>/dev/null | head -1 | awk '{print $3}' || echo none)"
@@ -95,7 +115,7 @@ fi
 echo "arch:   sm_$ARCH"
 echo "prefix: $PREFIX"
 
-# --- configure + build + install --------------------------------------------
+# --- configure --------------------------------------------------------------
 [ "$CLEAN" -eq 1 ] && rm -rf "$BUILD"
 
 "$CMAKE_BIN" -B "$BUILD" -S "$SRC" \
@@ -103,7 +123,21 @@ echo "prefix: $PREFIX"
     -DCMAKE_CUDA_ARCHITECTURES="$ARCH" \
     -DCMAKE_INSTALL_PREFIX="$PREFIX"
 
-"$CMAKE_BIN" --build "$BUILD" -j "$JOBS"
+# RMM headers land in the build tree, so this must come after configure.
+[ -d "$BUILD/_deps/rmm-src/include" ] && export CPATH="$BUILD/_deps/rmm-src/include:$CPATH"
+echo "cpath:  $CPATH"
+
+# --- build ------------------------------------------------------------------
+if [ "${#TARGETS[@]}" -gt 0 ]; then
+    for t in "${TARGETS[@]}"; do
+        echo "building target: $t"
+        "$CMAKE_BIN" --build "$BUILD" -j "$JOBS" --target "$t"
+    done
+else
+    "$CMAKE_BIN" --build "$BUILD" -j "$JOBS"
+fi
+
+# --- install ----------------------------------------------------------------
 "$CMAKE_BIN" --install "$BUILD"
 
 echo
