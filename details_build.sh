@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 #
-# Build leodec/openfhe-gpu-public.
+# Build and install leodec/openfhe-gpu-public.
 #
 # Key requirement: CMake 3.22.x. Newer CMake (3.27+) fails at configure time
 # with "export called with target ... which requires target Thrust/rmm that is
 # not in any export set". The project declares cmake_minimum_required(3.18)
 # and predates the stricter export checks.
 #
-# Usage: ./build_openfhe_gpu.sh [-s SRC_DIR] [-a CUDA_ARCH] [-j JOBS] [-c]
+# Usage: ./details_build.sh [-s SRC_DIR] [-p PREFIX] [-a CUDA_ARCH] [-j JOBS] [-c]
 #   -s  source directory   (default: ./openfhe-gpu-public)
+#   -p  install prefix     (default: $HOME/openfhe-install)
 #   -a  CUDA architecture  (default: autodetected; 75=T4, 80=A100, 86=A10/3090, 89=L4/4090)
 #   -j  parallel jobs      (default: nproc)
 #   -c  clean: remove the build directory before configuring
@@ -16,13 +17,15 @@
 set -euo pipefail
 
 SRC="${PWD}/openfhe-gpu-public"
+PREFIX="${HOME}/openfhe-install"
 ARCH=""
 JOBS="$(nproc)"
 CLEAN=0
 
-while getopts ":s:a:j:c" opt; do
+while getopts ":s:p:a:j:c" opt; do
     case "$opt" in
         s) SRC="$(readlink -f "$OPTARG")" ;;
+        p) PREFIX="$(readlink -f "$OPTARG")" ;;
         a) ARCH="$OPTARG" ;;
         j) JOBS="$OPTARG" ;;
         c) CLEAN=1 ;;
@@ -90,16 +93,26 @@ if [ -z "$ARCH" ]; then
     [ -n "$ARCH" ] || { echo "ERROR: could not detect compute capability; pass -a"; exit 1; }
 fi
 echo "arch:   sm_$ARCH"
+echo "prefix: $PREFIX"
 
-# --- configure + build ------------------------------------------------------
+# --- configure + build + install --------------------------------------------
 [ "$CLEAN" -eq 1 ] && rm -rf "$BUILD"
 
 "$CMAKE_BIN" -B "$BUILD" -S "$SRC" \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CUDA_ARCHITECTURES="$ARCH"
+    -DCMAKE_CUDA_ARCHITECTURES="$ARCH" \
+    -DCMAKE_INSTALL_PREFIX="$PREFIX"
 
 "$CMAKE_BIN" --build "$BUILD" -j "$JOBS"
+"$CMAKE_BIN" --install "$BUILD"
 
 echo
-echo "done. binaries under $BUILD/bin/"
+echo "installed to $PREFIX"
+ls "$PREFIX/lib" 2>/dev/null || true
+echo
+echo "example binaries stay in the build tree (not installed):"
 find "$BUILD/bin" -name "*gpu*" -type f 2>/dev/null || true
+echo
+echo "to use the installed library:"
+echo "  cmake -DOpenFHE_DIR=$PREFIX/lib/OpenFHE .."
+echo "  export LD_LIBRARY_PATH=$PREFIX/lib:\$LD_LIBRARY_PATH"
