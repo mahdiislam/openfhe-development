@@ -694,8 +694,8 @@ add_library(DeviceFunctions SHARED ${CORE_CUDA_FILES})
 target_link_directories(DeviceFunctions PUBLIC /usr/local/cuda/lib64)
 target_link_directories(DeviceFunctions PUBLIC /usr/local/cuda-12.8/lib64)
 target_link_libraries(DeviceFunctions
-  PUBLIC Thrust CUDA::cudart rmm
-  PRIVATE CUDA::nvToolsExt)
+  PUBLIC CUDA::cudart
+  PRIVATE Thrust rmm CUDA::nvToolsExt)
 target_compile_features(DeviceFunctions PUBLIC cxx_std_17 cuda_std_17)
 target_compile_options(DeviceFunctions PRIVATE
   $<$<COMPILE_LANGUAGE:CXX>:-Wall>
