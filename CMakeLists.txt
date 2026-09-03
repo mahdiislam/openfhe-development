@@ -704,6 +704,13 @@ target_compile_options(DeviceFunctions PRIVATE
   $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:RELWITHDEBINFO>>:-lineinfo>
 )
 
+install(TARGETS DeviceFunctions
+  EXPORT OpenFHETargets
+  DESTINATION lib)
+
+list(APPEND THIRDPARTYLIBS "DeviceFunctions")
+list(APPEND THIRDPARTYSTATICLIBS "DeviceFunctions")
+
 ### add each of the subdirs of src
 add_subdirectory(src/core)
 add_subdirectory(src/pke)
